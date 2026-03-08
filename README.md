@@ -15,8 +15,6 @@ Business users often lack technical skills like SQL or BI tools, creating bottle
 - **Custom CSV Upload** - Upload your own CSV file and start querying immediately; suggested inquiries dynamically update based on the uploaded data.
 - **Hallucination Handling** - Gracefully refuses to answer questions outside the available data schemas.
 - **Self-Correcting SQL** - Automatically retries and fixes failed queries based on database errors.
-- **Chat History** - Full conversational history with integrated charts and easily accessible SQL query dropdowns.
-- **Modern UI** - A sleek, responsive, dark-mode gradient theme providing a premium professional aesthetic.
 
 ## Tech Stack
 
@@ -80,6 +78,5 @@ This tests:
 4. "Compare HDFC and ICICI claims paid amounts"
 5. "Which insurers have the highest rejection rate?"
 
-## Team
 
-Built for the GFG Hackathon — Conversational AI for Instant Business Intelligence Dashboards.
+Built for the GFG Classroom Hackathon — Conversational AI for Instant Business Intelligence Dashboards.
