@@ -1,0 +1,5 @@
+.env
+myenv/
+__pycache__/
+*.pyc
+insurance_data.db
