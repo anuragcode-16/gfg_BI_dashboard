@@ -3,7 +3,7 @@ import os
 import json
 from openai import OpenAI
 from dotenv import load_dotenv
-from utils.prompts import SQL_SYSTEM_PROMPT, VIS_SYSTEM_PROMPT
+from utils.prompts import SQL_SYSTEM_PROMPT, SQL_FOLLOWUP_PROMPT, SQL_RETRY_PROMPT, VIS_SYSTEM_PROMPT
 from utils.database import get_schema
 
 # Load Environment Variables
@@ -17,47 +17,85 @@ else:
     print(f"🔑 OpenRouter Key loaded: {api_key[:10]}...")
 
 # Configure OpenRouter Client
-# OpenRouter is compatible with the OpenAI SDK
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=api_key,
-)
+client = None
+if api_key:
+    client = OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=api_key,
+    )
 
 # Model ID for Llama 3.3 70B Instruct on OpenRouter
 MODEL_NAME = "meta-llama/llama-3.3-70b-instruct"
 
 def get_llm_response(prompt):
     """Generates content using OpenRouter (Llama 3.3)."""
+    if not client:
+        return None, "API key not configured. Please set OPENROUTER_API_KEY in .env file."
     try:
         response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.1, # Low temperature for factual SQL/Data tasks
+            temperature=0.1,
         )
         return response.choices[0].message.content, None
     except Exception as e:
         print(f"⚠️ API Error: {e}")
         return None, str(e)
 
-def generate_sql(user_query):
-    """Generates SQL using Llama 3.3."""
-    schema = get_schema()
-    prompt = SQL_SYSTEM_PROMPT.format(schema=schema) + f"\nUser Question: {user_query}"
+def generate_sql(user_query, schema_override=None, conversation_history=None, previous_sql=None):
+    """Generates SQL using Llama 3.3, with optional conversation context and custom schema."""
+    schema = schema_override if schema_override else get_schema()
+    
+    # Use follow-up prompt if there's conversation history
+    if conversation_history and previous_sql:
+        history_text = "\n".join([
+            f"{'User' if msg['role'] == 'user' else 'Assistant'}: {msg.get('content', msg.get('text', ''))}" 
+            for msg in conversation_history[-6:]  # Last 3 exchanges
+        ])
+        prompt = SQL_FOLLOWUP_PROMPT.format(
+            history=history_text,
+            previous_sql=previous_sql,
+            schema=schema,
+            query=user_query
+        )
+    else:
+        prompt = SQL_SYSTEM_PROMPT.format(schema=schema) + f"\nUser Question: {user_query}"
     
     print(f"🔄 Querying model: {MODEL_NAME}...")
     response, error = get_llm_response(prompt)
     
     if response:
-        # Clean up the response (Llama usually follows instructions well)
         sql = response.replace("```sql", "").replace("```", "").strip()
         
-        # Safety check for hallucinations
-        if "cannot answer" in sql.lower() or "error" in sql.lower():
-            return None, "Model determined it cannot answer this question."
+        # Safety check for refusal
+        if "cannot answer" in sql.lower() or "error:" in sql.lower():
+            return None, "Model determined it cannot answer this question with the available data."
         
         print(f"✅ SQL Generated successfully.")
+        return sql, MODEL_NAME
+    
+    return None, error
+
+def retry_sql(bad_sql, error_msg, user_query, schema_override=None):
+    """Attempts to fix a failed SQL query using the LLM."""
+    schema = schema_override if schema_override else get_schema()
+    prompt = SQL_RETRY_PROMPT.format(
+        bad_sql=bad_sql,
+        error=error_msg,
+        schema=schema,
+        query=user_query
+    )
+    
+    print(f"🔄 Retrying SQL generation...")
+    response, error = get_llm_response(prompt)
+    
+    if response:
+        sql = response.replace("```sql", "").replace("```", "").strip()
+        if "cannot answer" in sql.lower() or "error:" in sql.lower():
+            return None, "Could not fix the query."
+        print(f"✅ Corrected SQL generated.")
         return sql, MODEL_NAME
     
     return None, error
@@ -71,11 +109,9 @@ def generate_visualization(user_query, df):
     
     if response:
         try:
-            # Clean potential markdown wrappers
             cleaned = response.replace("```json", "").replace("```", "").strip()
             return json.loads(cleaned)
         except json.JSONDecodeError:
-            # Fallback if Llama returns text mixed with JSON
             print("⚠️ JSON parsing failed, falling back to table.")
             return {
                 "chart_type": "table",
@@ -84,7 +120,6 @@ def generate_visualization(user_query, df):
                 "error": True
             }
     
-    # Fallback
     return {
         "chart_type": "table",
         "title": "Query Results",
