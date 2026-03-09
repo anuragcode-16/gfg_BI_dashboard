@@ -16,6 +16,33 @@ Business users often lack technical skills like SQL or BI tools, creating bottle
 - **Hallucination Handling** - Gracefully refuses to answer questions outside the available data schemas.
 - **Self-Correcting SQL** - Automatically retries and fixes failed queries based on database errors.
 
+## High-Level Workflow
+
+```text
+                               (1) User Input
+   [ React Frontend ] --------------------------------> [ FastAPI Backend ]
+    (ChatInterface)                                          (routes/query.py)
+           ^                                                         |
+           |                                                         v
+           |                   (5) SQL + Context          [ LLM Engine (Llama 3) ]
+           |             <-----------------------------       (llm_engine.py)
+           |                                                         |
+           |    (6) Data & Configuration                             | (2) Generated
+           |        (JSON format)                                    |     SQL
+           |                                                         v
+           +------------------------------------------- [ SQLite Database ]
+            Render UI/Charts (Recharts)                      (utils/database.py)
+                                                             (Data execution)
+```
+
+### How it works:
+1. **User Input:** User types a natural language query in the React frontend.
+2. **LLM Generation:** The FastAPI backend sends the query, conversation history, and the database schema to the LLM (Llama-3 via OpenRouter).
+3. **SQL Execution:** The LLM returns a SQL query which is executed against the SQLite database (auto-generated from CSVs).
+4. **Self-Correction (if needed):** If the SQL execution fails, the error is fed back to the LLM for automatic correction.
+5. **Visualization Generation:** The backend analyzes the query and the executed data to ask the LLM for an optimal chart configuration.
+6. **Frontend Rendering:** The data and chart configuration are returned to the frontend, which renders dynamic charts using Recharts.
+
 ## Tech Stack
 
 | Component | Technology |
@@ -57,12 +84,6 @@ The application comes pre-loaded with the **India Life Insurance Claims** datase
 - Metrics including claims pending, intimated, paid, repudiated, rejected, and unclaimed
 - Performance ratios for settlement efficiency and denial rates
 - Financial years 2020-21 and 2021-22
-
-## Approach & Innovation (30)
-
-- **Architecture:** The pipeline from natural language to the frontend is highly robust. The React frontend sends queries to a FastAPI backend, which uses an LLM to generate SQL. The SQL is safely executed against an automatically generated SQLite database, and the results—along with an AI-selected visualization configuration—are seamlessly rendered back to the user.
-- **Prompt Engineering:** We utilize sophisticated system prompts with dynamic schema injection. The system injects the exact database schema, sample values, and the user's conversational history into the prompt to ensure extremely high-quality and context-aware SQL generation. We also employ an AI-driven self-correction loop where failed SQL queries are fed back to the LLM along with the exact SQL execution error for automatic fixing.
-- **Hallucination Handling:** The system strictly adheres to the provided schema. If a query falls outside the scope of the available data, the LLM is explicitly instructed to refuse it. The application accurately reports these boundaries to the user via clear error messages, ensuring zero hallucinations and absolute data integrity rather than inventing numbers or fabricating data.
 
 ## Evaluation
 
