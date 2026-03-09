@@ -1,7 +1,9 @@
-streamlit
 pandas
-openai
-python-dotenv
-plotly
 sqlalchemy
-tabulate
+python-dotenv
+openai
+streamlit
+plotly
+fastapi
+uvicorn[standard]
+python-multipart

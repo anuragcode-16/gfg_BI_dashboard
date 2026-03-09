@@ -6,3 +6,5 @@ insurance_data.db
 uploaded_data.db
 *.db
 *.sqlite
+frontend/node_modules/
+frontend/dist/
