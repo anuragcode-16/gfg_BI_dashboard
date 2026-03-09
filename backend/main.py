@@ -22,10 +22,16 @@ CSV_PATH = os.path.join(PROJECT_ROOT, "data", "India Life Insurance Claims.csv")
 
 app = FastAPI(title="InsightAI API", version="1.0.0")
 
-# CORS — allow React dev server
+# CORS — allow React dev server and any deployed frontend origin
+_raw_origins = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173, http://localhost:3000, http://127.0.0.1:5173, https://bidashboard.vercel.app",
+)
+_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
