@@ -1,5 +1,5 @@
 // src/api.js
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = 'https://gfg-bi-dashboard-1.onrender.com/api';
 
 export async function sendQuery({ query, conversationHistory, previousSql, dbPath, schemaOverride }) {
   const res = await fetch(`${API_BASE}/query`, {
