@@ -40,7 +40,7 @@ export default function Sidebar({ onQuery, isUploaded, onUpload, onReset, onClea
         <aside className="app-sidebar">
             {/* Brand */}
             <div className="sidebar-brand">
-                <div className="sidebar-brand-icon">⚡</div>
+                <img src="/logo.png" alt="InsightAI Logo" className="sidebar-brand-icon" style={{ width: 32, height: 32, objectFit: 'contain' }} />
                 <div className="sidebar-brand-text">
                     <h2>InsightAI</h2>
                     <p>Data Intelligence</p>
@@ -51,7 +51,7 @@ export default function Sidebar({ onQuery, isUploaded, onUpload, onReset, onClea
             <div>
                 <p className="sidebar-section-title">Data Source</p>
                 <div className="sidebar-data-badge">
-                    {isUploaded ? '📁 Custom Dataset Active' : '🛡️ Insurance Claims Data'}
+                    {isUploaded ? 'Custom Dataset Active' : 'Insurance Claims Data'}
                 </div>
                 {isUploaded && (
                     <button className="sidebar-btn sidebar-btn--danger" style={{ marginTop: 8 }} onClick={onReset}>
@@ -67,7 +67,7 @@ export default function Sidebar({ onQuery, isUploaded, onUpload, onReset, onClea
                 <p className="sidebar-section-title">Upload Data</p>
                 <div className="upload-zone">
                     <input type="file" accept=".csv" ref={fileRef} onChange={handleFileChange} />
-                    <div className="upload-zone-icon">📂</div>
+                    <div className="upload-zone-icon"></div>
                     <div className="upload-zone-text">
                         {uploading ? 'Processing...' : <><span>Click to upload</span> a CSV file</>}
                     </div>
@@ -78,7 +78,7 @@ export default function Sidebar({ onQuery, isUploaded, onUpload, onReset, onClea
 
             {/* Suggested Queries */}
             <div style={{ flex: 1 }}>
-                <p className="sidebar-section-title">✦ Suggested Queries</p>
+                <p className="sidebar-section-title">Suggested Queries</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {queries.map((q) => (
                         <button key={q} className="query-chip" onClick={() => onQuery(q)}>
@@ -92,7 +92,7 @@ export default function Sidebar({ onQuery, isUploaded, onUpload, onReset, onClea
 
             {/* Actions */}
             <button className="sidebar-btn" onClick={onClearHistory}>
-                🗑 Clear Session
+                Clear Session
             </button>
         </aside>
     );

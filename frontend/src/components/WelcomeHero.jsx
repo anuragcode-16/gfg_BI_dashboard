@@ -3,7 +3,7 @@
 export default function WelcomeHero() {
     return (
         <div className="welcome-container">
-            <div className="welcome-sparkle">✦ AI-Powered Analytics</div>
+            <div className="welcome-sparkle">AI-Powered Analytics</div>
 
             <h1 className="welcome-title">
                 <span className="welcome-title-gradient">
@@ -18,7 +18,7 @@ export default function WelcomeHero() {
 
             <div className="welcome-cards">
                 <div className="welcome-card">
-                    <div className="welcome-card-icon">🔮</div>
+                    <div className="welcome-card-icon"></div>
                     <h3 className="welcome-card-title">Automated Synthesis</h3>
                     <p className="welcome-card-desc">
                         Natural language processing translates unstructured requests into precise SQL execution plans dynamically.
@@ -26,7 +26,7 @@ export default function WelcomeHero() {
                 </div>
 
                 <div className="welcome-card">
-                    <div className="welcome-card-icon">📊</div>
+                    <div className="welcome-card-icon"></div>
                     <h3 className="welcome-card-title">Visual Intelligence</h3>
                     <p className="welcome-card-desc">
                         Algorithmic determination of optimal chart types tailored precisely to the returned data structure.
@@ -34,7 +34,7 @@ export default function WelcomeHero() {
                 </div>
 
                 <div className="welcome-card">
-                    <div className="welcome-card-icon">🔄</div>
+                    <div className="welcome-card-icon"></div>
                     <h3 className="welcome-card-title">Continuous Context</h3>
                     <p className="welcome-card-desc">
                         Stateful session memory enables iterative drill-downs and multi-step analytical workflows.

@@ -86,7 +86,7 @@ export default function App() {
         setMessages([
           {
             role: 'assistant',
-            text: `✅ Dataset loaded: ${result.row_count} rows, ${result.col_count} columns. Ask me anything about your data!`,
+            text: `Dataset loaded: ${result.row_count} rows, ${result.col_count} columns. Ask me anything about your data!`,
           },
         ]);
       } else {
@@ -152,7 +152,7 @@ export default function App() {
           {/* Header */}
           <header className="app-header">
             <div className="header-logo">
-              <div className="header-logo-icon">⚡</div>
+              <img src="/logo.png" alt="InsightAI Logo" className="header-logo-icon" style={{ width: 32, height: 32, objectFit: 'contain' }} />
               <span className="header-logo-text">InsightAI</span>
             </div>
             <div className="header-badge">
@@ -191,7 +191,9 @@ export default function App() {
                 onClick={() => handleSubmit()}
                 disabled={isLoading || !input.trim()}
               >
-                ➤
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                </svg>
               </button>
             </div>
           </div>

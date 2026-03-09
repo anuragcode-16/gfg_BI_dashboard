@@ -34,7 +34,7 @@ export default function ChatInterface({ messages, isLoading }) {
                         <>
                             {msg.error ? (
                                 <div className="message-bubble message-bubble--assistant message-bubble--error">
-                                    ⚠️ {msg.error}
+                                    {msg.error}
                                 </div>
                             ) : msg.text ? (
                                 <div className="message-bubble message-bubble--assistant">{msg.text}</div>
