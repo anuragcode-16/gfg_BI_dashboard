@@ -58,6 +58,12 @@ The application comes pre-loaded with the **India Life Insurance Claims** datase
 - Performance ratios for settlement efficiency and denial rates
 - Financial years 2020-21 and 2021-22
 
+## Approach & Innovation (30)
+
+- **Architecture:** The pipeline from natural language to the frontend is highly robust. The React frontend sends queries to a FastAPI backend, which uses an LLM to generate SQL. The SQL is safely executed against an automatically generated SQLite database, and the results—along with an AI-selected visualization configuration—are seamlessly rendered back to the user.
+- **Prompt Engineering:** We utilize sophisticated system prompts with dynamic schema injection. The system injects the exact database schema, sample values, and the user's conversational history into the prompt to ensure extremely high-quality and context-aware SQL generation. We also employ an AI-driven self-correction loop where failed SQL queries are fed back to the LLM along with the exact SQL execution error for automatic fixing.
+- **Hallucination Handling:** The system strictly adheres to the provided schema. If a query falls outside the scope of the available data, the LLM is explicitly instructed to refuse it. The application accurately reports these boundaries to the user via clear error messages, ensuring zero hallucinations and absolute data integrity rather than inventing numbers or fabricating data.
+
 ## Evaluation
 
 Run the accuracy evaluation framework manually:
