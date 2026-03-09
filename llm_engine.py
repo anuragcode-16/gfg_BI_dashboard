@@ -3,8 +3,17 @@ import os
 import json
 from openai import OpenAI
 from dotenv import load_dotenv
-from utils.prompts import SQL_SYSTEM_PROMPT, SQL_FOLLOWUP_PROMPT, SQL_RETRY_PROMPT, VIS_SYSTEM_PROMPT
+from utils.prompts import (
+    SQL_SYSTEM_PROMPT,
+    SQL_FOLLOWUP_PROMPT,
+    SQL_RETRY_PROMPT,
+    VIS_SYSTEM_PROMPT,
+    RAG_SQL_PROMPT,
+    RAG_CONTEXT_HEADER,
+    RAG_EXAMPLE_TEMPLATE,
+)
 from utils.database import get_schema
+from utils.rag_store import rag_store
 
 # Load Environment Variables
 load_dotenv()
@@ -44,38 +53,84 @@ def get_llm_response(prompt):
         print(f"⚠️ API Error: {e}")
         return None, str(e)
 
-def generate_sql(user_query, schema_override=None, conversation_history=None, previous_sql=None):
-    """Generates SQL using Llama 3.3, with optional conversation context and custom schema."""
+def _build_rag_context(user_query: str, session_id: str | None) -> str:
+    """
+    Retrieve the top-3 semantically similar past interactions from the RAG store
+    and format them as a few-shot context block for injection into the prompt.
+    Returns an empty string when no relevant history is found.
+    """
+    similar = rag_store.retrieve_similar(user_query, n_results=3, session_id=session_id)
+    if not similar:
+        return ""
+
+    examples_text = "\n\n".join(
+        RAG_EXAMPLE_TEMPLATE.format(
+            query=item["query"],
+            sql=item["sql"],
+            result_summary=item["result_summary"],
+        )
+        for item in similar
+    )
+    rag_context = RAG_CONTEXT_HEADER.format(examples=examples_text)
+    print(f"📚 RAG: injecting {len(similar)} similar interaction(s) into prompt.")
+    return rag_context
+
+
+def generate_sql(
+    user_query,
+    schema_override=None,
+    conversation_history=None,
+    previous_sql=None,
+    session_id=None,
+):
+    """
+    Generates SQL using Llama 3.3.
+
+    Priority order for context:
+      1. Conversation history + previous SQL  → SQL_FOLLOWUP_PROMPT
+      2. RAG-retrieved similar past examples   → RAG_SQL_PROMPT (new)
+      3. No prior context                      → SQL_SYSTEM_PROMPT (baseline)
+    """
     schema = schema_override if schema_override else get_schema()
-    
-    # Use follow-up prompt if there's conversation history
+
     if conversation_history and previous_sql:
-        history_text = "\n".join([
-            f"{'User' if msg['role'] == 'user' else 'Assistant'}: {msg.get('content', msg.get('text', ''))}" 
-            for msg in conversation_history[-6:]  # Last 3 exchanges
-        ])
+        # In-session follow-up: use the dedicated follow-up prompt
+        history_text = "\n".join(
+            f"{'User' if msg['role'] == 'user' else 'Assistant'}: {msg.get('content', msg.get('text', ''))}"
+            for msg in conversation_history[-6:]  # last 3 exchanges
+        )
         prompt = SQL_FOLLOWUP_PROMPT.format(
             history=history_text,
             previous_sql=previous_sql,
             schema=schema,
-            query=user_query
+            query=user_query,
         )
     else:
-        prompt = SQL_SYSTEM_PROMPT.format(schema=schema) + f"\nUser Question: {user_query}"
-    
+        # First question (or new session) – enrich with RAG context
+        rag_context = _build_rag_context(user_query, session_id)
+        if rag_context:
+            prompt = RAG_SQL_PROMPT.format(
+                schema=schema,
+                rag_context=rag_context,
+                query=user_query,
+            )
+        else:
+            # Pure baseline – no prior context available
+            prompt = SQL_SYSTEM_PROMPT.format(schema=schema) + f"\nUser Question: {user_query}"
+
     print(f"🔄 Querying model: {MODEL_NAME}...")
     response, error = get_llm_response(prompt)
-    
+
     if response:
         sql = response.replace("```sql", "").replace("```", "").strip()
-        
+
         # Safety check for refusal
         if "cannot answer" in sql.lower() or "error:" in sql.lower():
             return None, "Model determined it cannot answer this question with the available data."
-        
+
         print(f"✅ SQL Generated successfully.")
         return sql, MODEL_NAME
-    
+
     return None, error
 
 def retry_sql(bad_sql, error_msg, user_query, schema_override=None):

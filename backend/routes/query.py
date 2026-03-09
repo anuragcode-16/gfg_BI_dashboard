@@ -6,12 +6,14 @@ import json
 
 from llm_engine import generate_sql, generate_visualization, retry_sql
 from utils.database import execute_sql, get_schema
+from utils.rag_store import rag_store, summarize_dataframe
 
 router = APIRouter()
 
 
 class QueryRequest(BaseModel):
     query: str
+    session_id: Optional[str] = None
     conversation_history: Optional[list] = None
     previous_sql: Optional[str] = None
     db_path: Optional[str] = None
@@ -31,12 +33,13 @@ class QueryResponse(BaseModel):
 async def run_query(req: QueryRequest):
     """Process a natural language query and return SQL + data + chart config."""
 
-    # 1. Generate SQL from natural language
+    # 1. Generate SQL from natural language (RAG context injected automatically)
     sql, error_or_model = generate_sql(
         user_query=req.query,
         schema_override=req.schema_override,
         conversation_history=req.conversation_history,
         previous_sql=req.previous_sql,
+        session_id=req.session_id,
     )
 
     if not sql:
@@ -67,6 +70,14 @@ async def run_query(req: QueryRequest):
 
     # 4. Generate visualization config
     vis_config = generate_visualization(req.query, df)
+
+    # 5. Persist successful interaction in RAG store for future context enrichment
+    rag_store.store_interaction(
+        query=req.query,
+        sql=sql,
+        df_summary=summarize_dataframe(df),
+        session_id=req.session_id or "default",
+    )
 
     return QueryResponse(
         sql=sql,

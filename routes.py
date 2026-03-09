@@ -15,6 +15,7 @@ from utils.database import (
     get_uploaded_schema,
     DB_PATH,
 )
+from utils.rag_store import rag_store, summarize_dataframe
 
 logger = logging.getLogger(__name__)
 
@@ -101,12 +102,13 @@ def run_query(req: QueryRequest):
     conversation_history = session.history if len(session.history) > 1 else None
     previous_sql = session.last_sql
 
-    # 1) Generate SQL
+    # 1) Generate SQL (with RAG context injected for first questions)
     sql, error_or_model = generate_sql(
         user_query=req.query,
         schema_override=active_schema,
         conversation_history=conversation_history,
         previous_sql=previous_sql,
+        session_id=req.session_id,
     )
 
     if not sql:
@@ -144,6 +146,14 @@ def run_query(req: QueryRequest):
 
     session.last_sql = sql
     data_records = df.to_dict(orient="records")
+
+    # 4) Persist successful interaction in the RAG store for future context
+    rag_store.store_interaction(
+        query=req.query,
+        sql=sql,
+        df_summary=summarize_dataframe(df),
+        session_id=req.session_id or "default",
+    )
 
     session.history.append({
         "role": "assistant",

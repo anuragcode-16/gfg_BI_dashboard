@@ -1,12 +1,14 @@
 // src/api.js
 const API_BASE = 'https://gfg-bi-dashboard-1.onrender.com/api';
+// const API_BASE = 'http://localhost:8000/api';
 
-export async function sendQuery({ query, conversationHistory, previousSql, dbPath, schemaOverride }) {
+export async function sendQuery({ query, sessionId, conversationHistory, previousSql, dbPath, schemaOverride }) {
   const res = await fetch(`${API_BASE}/query`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       query,
+      session_id: sessionId || null,
       conversation_history: conversationHistory || null,
       previous_sql: previousSql || null,
       db_path: dbPath || null,

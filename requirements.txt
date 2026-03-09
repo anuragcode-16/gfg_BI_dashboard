@@ -7,3 +7,6 @@ plotly
 fastapi
 uvicorn[standard]
 python-multipart
+# RAG dependencies
+chromadb
+sentence-transformers
