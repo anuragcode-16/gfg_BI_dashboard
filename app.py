@@ -549,7 +549,7 @@ if active_query and (db_ready or st.session_state.using_uploaded):
             conversation_history = st.session_state.history if len(st.session_state.history) > 1 else None
             previous_sql = st.session_state.last_sql
             
-            sql, model_used = generate_sql(
+            sql, error_or_model = generate_sql(
                 user_query=active_query, 
                 schema_override=active_schema, 
                 conversation_history=conversation_history,
@@ -557,7 +557,12 @@ if active_query and (db_ready or st.session_state.using_uploaded):
             )
             
             if not sql:
-                error_text = "The requested information is not available in the current dataset schema. Please adjust your parameters."
+                if error_or_model and "API key" in str(error_or_model):
+                    error_text = "⚠️ API key not configured. Please set OPENROUTER_API_KEY in the .env file."
+                elif error_or_model and "cannot answer" in str(error_or_model).lower():
+                    error_text = "The requested information is not available in the current dataset schema. Please adjust your parameters."
+                else:
+                    error_text = f"Failed to generate query: {error_or_model or 'Unknown error. Check your API key and network connection.'}"
                 st.markdown(f"<span style='color: #FF69B4;'>{error_text}</span>", unsafe_allow_html=True)
                 st.session_state.history.append({
                     "role": "assistant",
